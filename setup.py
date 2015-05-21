@@ -4,7 +4,7 @@
 from setuptools import setup, Extension
 import sys
 
-gcc_args = ['--std=c++11', '-msse4.2', '-march=native', '-mtune=native', '-O4']
+gcc_args = ['-msse4.2', '-march=native', '-mtune=native', '-O3']
 clang_args = gcc_args + []
 args = clang_args if sys.platform == 'darwin' else gcc_args
 
