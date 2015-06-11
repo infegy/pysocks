@@ -43,17 +43,21 @@ PyObject * pysocks_send_string(PyObject *self, PyObject *args) {
 		return NULL;
 	}
 
-	Py_ssize_t data_length = PyString_Size(data);
+	int data_length = (int)PyString_Size(data);
 
 	char * send_buffer = (char *)malloc(4+data_length);
 	memcpy(send_buffer, &data_length, 4);
-	memcpy(send_buffer+4, PyString_AsString(data), data_length);
+
+	if(data_length)
+		memcpy(send_buffer+4, PyString_AsString(data), data_length);
 
 	int total_written = 0;
 
+	bool error_occurred = false;
+
 	Py_BEGIN_ALLOW_THREADS
 
-	int length = (int)data_length+4;
+	int length = data_length+4;
 
 	const char * offset = send_buffer;
 	
@@ -70,9 +74,9 @@ PyObject * pysocks_send_string(PyObject *self, PyObject *args) {
 				this_write = 0;
 				usleep(10000);
 			} else {
-				PyErr_SetString(PyExc_IOError, "socket send error");
+				error_occurred = true;
 				free(send_buffer);
-				return NULL;
+				break;
 			}
 		} else {
 			total_written += this_write;
@@ -87,6 +91,11 @@ PyObject * pysocks_send_string(PyObject *self, PyObject *args) {
 	free(send_buffer);
 
 	Py_END_ALLOW_THREADS
+
+	if(error_occurred) {
+		PyErr_SetString(PyExc_IOError, "socket send error");
+		return NULL;
+	}
 	
 	return PyInt_FromLong(total_written);
 }
@@ -113,7 +122,7 @@ int _read_all(int sock_fd, char * dest, int length) {
 			len_read += this_read;
 
 			if(len_read < length) {
-				usleep(5000);
+				usleep(10000);
 			}
 
 		} else if(!this_read) {
@@ -152,15 +161,17 @@ PyObject * pysocks_read_string(PyObject *self, PyObject *args) {
 	if(len == 0)
 		return PyString_FromStringAndSize("", 0);
 	
-	PyObject * pystr = PyString_FromStringAndSize(NULL, len);
-	char * str = PyString_AsString(pystr);
+	char * str = (char *)malloc(len+1);
 	
 	if(_read_all(sock_fd, str, len) <= 0) {
-		Py_DECREF(pystr);
+		free(str);
 		PyErr_SetString(PyExc_IOError, "socket read error");
 		return NULL;
 	}
 	str[len] = 0;
+
+	PyObject * pystr = PyString_FromStringAndSize(str, len);
+	free(str);
 
 	return pystr;
 }
