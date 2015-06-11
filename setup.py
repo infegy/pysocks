@@ -10,7 +10,7 @@ args = clang_args if sys.platform == 'darwin' else gcc_args
 
 setup(
     name='pysocks',
-    version='0.2',
+    version='0.21',
     license='Proprietary',
     author='Justin Graves',
     author_email='justin@infegy.com',
