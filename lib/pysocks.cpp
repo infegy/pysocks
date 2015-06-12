@@ -75,7 +75,6 @@ PyObject * pysocks_send_string(PyObject *self, PyObject *args) {
 				usleep(10000);
 			} else {
 				error_occurred = true;
-				free(send_buffer);
 				break;
 			}
 		} else {
