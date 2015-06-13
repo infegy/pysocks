@@ -45,7 +45,7 @@ PyObject * pysocks_send_string(PyObject *self, PyObject *args) {
 
 	int data_length = (int)PyString_Size(data);
 
-	char * send_buffer = (char *)malloc(4+data_length);
+	char * send_buffer = (char *)malloc(4+data_length+8);
 	memcpy(send_buffer, &data_length, 4);
 
 	if(data_length)
@@ -72,7 +72,7 @@ PyObject * pysocks_send_string(PyObject *self, PyObject *args) {
 		if(this_write < 0) {
 			if(errno == EAGAIN || errno ==  EWOULDBLOCK) {
 				this_write = 0;
-				usleep(10000);
+				usleep(5000);
 			} else {
 				error_occurred = true;
 				break;
@@ -86,10 +86,10 @@ PyObject * pysocks_send_string(PyObject *self, PyObject *args) {
 			}
 		}
 	}
-	
-	free(send_buffer);
 
 	Py_END_ALLOW_THREADS
+
+	free(send_buffer);
 
 	if(error_occurred) {
 		PyErr_SetString(PyExc_IOError, "socket send error");
@@ -109,7 +109,7 @@ int _read_all(int sock_fd, char * dest, int length) {
 		
 		if(this_read < 0) {
 			if(errno == EAGAIN || errno == EWOULDBLOCK) {
-				usleep(10000);
+				usleep(5000);
 				continue;
 			} else {
 				len_read = -1;
@@ -121,7 +121,7 @@ int _read_all(int sock_fd, char * dest, int length) {
 			len_read += this_read;
 
 			if(len_read < length) {
-				usleep(10000);
+				usleep(5000);
 			}
 
 		} else if(!this_read) {
@@ -160,7 +160,7 @@ PyObject * pysocks_read_string(PyObject *self, PyObject *args) {
 	if(len == 0)
 		return PyString_FromStringAndSize("", 0);
 	
-	char * str = (char *)malloc(len+1);
+	char * str = (char *)malloc(len+8);
 	
 	if(_read_all(sock_fd, str, len) <= 0) {
 		free(str);
